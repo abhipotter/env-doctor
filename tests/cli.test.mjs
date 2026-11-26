@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { chmodSync, mkdirSync, mkdtempSync, readFileSync, rmSync, symlinkSync } from 'node:fs';
+import { appendFileSync, chmodSync, cpSync, mkdirSync, mkdtempSync, readFileSync, rmSync, symlinkSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { test } from 'node:test';
@@ -7,6 +7,7 @@ import { test } from 'node:test';
 import { createProject, REPO_ROOT, runCli, writeFiles } from './helpers.mjs';
 
 const PACKAGE_VERSION = JSON.parse(readFileSync(path.join(REPO_ROOT, 'package.json'), 'utf8')).version;
+const DEMO_DIRECTORY = path.join(REPO_ROOT, 'examples', 'vite-express');
 const IS_WINDOWS = process.platform === 'win32';
 
 const BASIC_PROJECT = {
@@ -390,4 +391,23 @@ test('values from examples, env files, and the process environment never appear 
   for (const output of [failing.stdout, failing.stderr, broken.stdout, broken.stderr]) {
     assert.doesNotMatch(output, new RegExp(sentinel));
   }
+});
+
+test('the demo fails as documented, then passes after adding the declaration', (t) => {
+  const checkedIn = runCli(['check'], { cwd: DEMO_DIRECTORY });
+  assert.equal(checkedIn.status, 1, checkedIn.stderr);
+  assert.match(checkedIn.stdout, /^ERROR \[missing-declaration\] CLIENT_ORIGIN {2}server\/src\/config\.js:3:17\n/);
+  assert.match(checkedIn.stdout, /1 error, 0 warnings, 3 informational findings\n$/);
+
+  const copy = mkdtempSync(path.join(tmpdir(), 'env-doctor-demo-'));
+  t.after(() => rmSync(copy, { recursive: true, force: true }));
+  cpSync(DEMO_DIRECTORY, copy, {
+    recursive: true,
+    filter: (source) => !source.split(path.sep).includes('node_modules'),
+  });
+  appendFileSync(path.join(copy, 'server', '.env.example'), 'CLIENT_ORIGIN=http://localhost:5173\n');
+
+  const fixed = runCli(['check'], { cwd: copy });
+  assert.equal(fixed.status, 0, fixed.stdout);
+  assert.match(fixed.stdout, /0 errors, 0 warnings, 3 informational findings\n$/);
 });
