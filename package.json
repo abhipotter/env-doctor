@@ -1,0 +1,39 @@
+{
+  "name": "env-doctor",
+  "version": "0.1.0",
+  "description": "Checks environment variable usage in Vite and Node projects, flags missing .env.example entries, and explains when to rebuild the frontend or restart the backend.",
+  "keywords": [
+    "env",
+    "dotenv",
+    "env-example",
+    "vite",
+    "express",
+    "cli",
+    "ci"
+  ],
+  "license": "MIT",
+  "author": "Abhishek Potter",
+  "type": "module",
+  "bin": {
+    "env-doctor": "dist/cli.js"
+  },
+  "files": [
+    "dist"
+  ],
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "clean": "node scripts/clean-dist.mjs",
+    "build": "npm run clean && tsc -p tsconfig.json",
+    "test": "npm run build && node --test tests/*.test.mjs",
+    "test:only": "node --test tests/*.test.mjs",
+    "prepack": "npm run build"
+  },
+  "dependencies": {
+    "typescript": "~6.0.3"
+  },
+  "devDependencies": {
+    "@types/node": "^22.20.7"
+  }
+}
