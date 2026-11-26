@@ -28,6 +28,7 @@
     "build": "npm run clean && tsc -p tsconfig.json",
     "test": "npm run build && node --test tests/*.test.mjs",
     "test:only": "node --test tests/*.test.mjs",
+    "smoke:pack": "npm run build && node scripts/pack-smoke.mjs",
     "prepack": "npm run build"
   },
   "dependencies": {

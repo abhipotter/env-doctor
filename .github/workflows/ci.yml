@@ -1,0 +1,51 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    name: Node ${{ matrix.node }} on ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+        node: [22, 24]
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: ${{ matrix.node }}
+          cache: npm
+
+      - run: npm ci
+
+      - run: npm run build
+
+      # Builds again, then runs the parser, rule, and CLI tests against dist/.
+      - run: npm test
+
+      # The demo must fail as documented. The CLI tests also check the fixed
+      # state in a temporary copy, so the checked-in demo stays unchanged.
+      - name: Demo scan reports the documented error
+        shell: bash
+        working-directory: examples/vite-express
+        run: |
+          set +e
+          node ../../dist/cli.js check
+          status=$?
+          set -e
+          if [ "$status" -ne 1 ]; then
+            echo "Expected exit code 1 from the demo scan, got $status"
+            exit 1
+          fi
+
+      - name: Packed install behaves like the local build
+        run: npm run smoke:pack
